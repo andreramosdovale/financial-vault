@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: financial_vault_db
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: financial_vault
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d financial_vault"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: financial_vault_api
+    restart: always
+    # depends_on:
+    #   db:
+    #     condition: service_healthy # Só inicia a API depois que o DB estiver pronto
+    ports:
+      - "3030:3030"
+    environment:
+      - DATABASE_URL=postgres://user:password@db:5432/financial_vault
+      - SUPER_SECRET_TOKEN=seu-super-secret-token-aqui
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: financial_vault_web
+    restart: always
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3001/api
+      - NEXT_PUBLIC_SUPER_SECRET_TOKEN=seu-super-secret-token-aqui
+volumes:
+  postgres_data:
