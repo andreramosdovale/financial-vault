@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { bearerAuth } from "hono/bearer-auth";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
+import { cors } from "hono/cors";
 
 import { DrizzlePaymentRepository } from "./infrastructure/repositories/drizzle-payment.repository";
 import {
@@ -17,6 +18,17 @@ import { GetAllPaymentsUseCase } from "./application/use-cases/get-all-payments.
 const app = new Hono().basePath("/api");
 
 const SUPER_SECRET_TOKEN = process.env.SUPER_SECRET_TOKEN || "";
+
+app.use(
+  "/*",
+  cors({
+    origin: "http://localhost:3000",
+    allowHeaders: ["Authorization", "Content-Type", "X-Idempotency-Key"],
+    allowMethods: ["POST", "GET", "OPTIONS"],
+    maxAge: 600,
+  })
+);
+
 app.use("/payments/*", bearerAuth({ token: SUPER_SECRET_TOKEN }));
 
 const createPaymentSchema = z.object({
