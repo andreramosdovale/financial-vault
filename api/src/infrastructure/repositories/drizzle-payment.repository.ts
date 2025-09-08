@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
 import type {
   CreatePaymentDTO,
@@ -9,6 +9,20 @@ import { db } from "../../db/client";
 import { payments } from "../../db/schema";
 
 export class DrizzlePaymentRepository implements IPaymentRepository {
+  async findAll(): Promise<Payment[]> {
+    const result = await db.query.payments.findMany({
+      orderBy: [desc(payments.createdAt)],
+    });
+    return result;
+  }
+
+  async findById(id: string): Promise<Payment | null> {
+    const result = await db.query.payments.findFirst({
+      where: eq(payments.id, id),
+    });
+    return result ?? null;
+  }
+
   async findByIdempotencyKey(key: string): Promise<Payment | null> {
     const result = await db.query.payments.findFirst({
       where: eq(payments.idempotencyKey, key),

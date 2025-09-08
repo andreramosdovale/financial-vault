@@ -8,6 +8,11 @@ import {
   CreatePaymentUseCase,
   PaymentConflictError,
 } from "./application/use-cases/create-payment.use-case";
+import {
+  GetPaymentUseCase,
+  PaymentNotFoundError,
+} from "./application/use-cases/get-payment.use-case";
+import { GetAllPaymentsUseCase } from "./application/use-cases/get-all-payments.use-case";
 
 const app = new Hono().basePath("/api");
 
@@ -49,6 +54,37 @@ app.post(
     }
   }
 );
+
+app.get("/payments/:id", async (c) => {
+  const id = c.req.param("id");
+
+  const paymentRepository = new DrizzlePaymentRepository();
+  const getPaymentUseCase = new GetPaymentUseCase(paymentRepository);
+
+  try {
+    const payment = await getPaymentUseCase.execute(id);
+    return c.json(payment, 200);
+  } catch (error) {
+    if (error instanceof PaymentNotFoundError) {
+      return c.json({ message: error.message }, 404);
+    }
+    console.error(error);
+    return c.json({ message: "Internal Server Error" }, 500);
+  }
+});
+
+app.get("/payments", async (c) => {
+  const paymentRepository = new DrizzlePaymentRepository();
+  const getAllPaymentsUseCase = new GetAllPaymentsUseCase(paymentRepository);
+
+  try {
+    const payments = await getAllPaymentsUseCase.execute();
+    return c.json(payments, 200);
+  } catch (error) {
+    console.error(error);
+    return c.json({ message: "Internal Server Error" }, 500);
+  }
+});
 
 app.get("/health", (c) => {
   return c.json({ status: "ok" });
