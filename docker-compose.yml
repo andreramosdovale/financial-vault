@@ -23,11 +23,8 @@ services:
       dockerfile: Dockerfile
     container_name: financial_vault_api
     restart: always
-    # depends_on:
-    #   db:
-    #     condition: service_healthy # Só inicia a API depois que o DB estiver pronto
     ports:
-      - "3030:3030"
+      - "3001:3000"
     environment:
       - DATABASE_URL=postgres://user:password@db:5432/financial_vault
       - SUPER_SECRET_TOKEN=seu-super-secret-token-aqui

@@ -1,27 +1,18 @@
-FROM node:latest AS builder
+# syntax=docker/dockerfile:1
+
+FROM node:20-slim AS builder
 WORKDIR /app
-
 RUN npm install -g pnpm
-
 COPY package.json pnpm-lock.yaml ./
-
 RUN pnpm install
-
 COPY . .
-
 RUN pnpm run build
 
-FROM node:latest
+FROM node:20-slim
 WORKDIR /app
-
 RUN npm install -g pnpm
-
 COPY package.json pnpm-lock.yaml ./
-
 RUN pnpm install --prod
-
-COPY --from=builder /app/package.json ./
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-
-CMD [ "pnpm", "start" ]
+EXPOSE 3000
+CMD [ "node", "dist/server.js" ]
