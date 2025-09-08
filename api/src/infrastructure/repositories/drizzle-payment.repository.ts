@@ -34,10 +34,22 @@ export class DrizzlePaymentRepository implements IPaymentRepository {
     const newPayment = {
       id: createId(),
       ...data,
-      createdAt: new Date(),
     };
 
-    await db.insert(payments).values(newPayment);
-    return newPayment;
+    console.log("[LOG REPO] Tentando inserir este objeto:", newPayment);
+
+    try {
+      const [insertedPayment] = await db
+        .insert(payments)
+        .values(newPayment)
+        .returning();
+
+      console.log("[LOG REPO] Drizzle retornou:", insertedPayment);
+
+      return insertedPayment;
+    } catch (error) {
+      console.error("[LOG REPO] ERRO no Drizzle:", error);
+      throw error;
+    }
   }
 }

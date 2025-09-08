@@ -40,6 +40,9 @@ app.post(
         ...body,
         idempotencyKey,
       });
+
+      console.log("[LOG ROTA] Sucesso! Retornando para o cliente:", newPayment);
+
       return c.json(newPayment, 201);
     } catch (error) {
       if (error instanceof PaymentConflictError) {
@@ -48,7 +51,7 @@ app.post(
         );
         return c.json(existingPayment, 409);
       }
-      // Logar o erro winston
+
       console.error(error);
       return c.json({ message: "Internal Server Error" }, 500);
     }
