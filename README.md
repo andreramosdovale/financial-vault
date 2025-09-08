@@ -1,5 +1,4 @@
 📄 Sobre o Projeto
-Financial Vault é uma aplicação full stack desenvolvida como parte de um desafio técnico para demonstrar habilidades em desenvolvimento de backend, frontend e DevOps. A aplicação consiste em uma API para processamento de pagamentos com garantia de idempotência e uma interface web para interagir com a mesma.
 
 A arquitetura do backend foi construída seguindo os princípios da Clean Architecture, separando as camadas de Domínio, Aplicação e Infraestrutura para garantir um código desacoplado, testável e escalável.
 
