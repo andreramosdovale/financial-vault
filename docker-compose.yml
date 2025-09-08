@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   db:
     image: postgres:latest
@@ -16,6 +18,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - app-network
 
   api:
     build:
@@ -23,11 +27,16 @@ services:
       dockerfile: Dockerfile
     container_name: financial_vault_api
     restart: always
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "3001:3000"
     environment:
       - DATABASE_URL=postgres://user:password@db:5432/financial_vault
       - SUPER_SECRET_TOKEN=seu-super-secret-token-aqui
+    networks:
+      - app-network
 
   web:
     build:
@@ -42,5 +51,12 @@ services:
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:3001/api
       - NEXT_PUBLIC_SUPER_SECRET_TOKEN=seu-super-secret-token-aqui
+    networks:
+      - app-network
+
 volumes:
   postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
