@@ -1,103 +1,182 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { v4 as uuidv4 } from "uuid";
+
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle, CheckCircle2, ShieldAlert } from "lucide-react";
+
+interface PaymentData {
+  amount: number;
+  description: string;
+}
+
+interface PaymentResponse {
+  id: string;
+  amount: number;
+  description: string;
+  idempotencyKey: string;
+  createdAt: string;
+}
+
+async function createPayment(
+  paymentData: PaymentData
+): Promise<PaymentResponse> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+  const apiToken = process.env.NEXT_PUBLIC_SUPER_SECRET_TOKEN || "";
+
+  const idempotencyKey = uuidv4();
+
+  const response = await fetch(`${apiUrl}/payments`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiToken}`,
+      "X-Idempotency-Key": idempotencyKey,
+    },
+    body: JSON.stringify(paymentData),
+  });
+
+  const responseBody = await response.json();
+
+  if (!response.ok) {
+    const error = new Error(
+      responseBody.message || "Ocorreu um erro ao processar o pagamento."
+    );
+    (error as any).status = response.status;
+    (error as any).data = responseBody;
+    throw error;
+  }
+
+  return responseBody;
+}
+
+export default function PaymentPage() {
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
+
+  const mutation = useMutation<PaymentResponse, Error, PaymentData>({
+    mutationFn: createPayment,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const numericAmount = Math.round(parseFloat(amount) * 100);
+
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      alert("Por favor, insira um valor válido.");
+      return;
+    }
+
+    mutation.mutate({ amount: numericAmount, description });
+  };
+
+  const getErrorStatus = (error: Error | null): number | undefined => {
+    return error ? (error as any).status : undefined;
+  };
+
+  const getErrorData = (error: Error | null): PaymentResponse | undefined => {
+    return error ? (error as any).data : undefined;
+  };
+
+  const errorStatus = getErrorStatus(mutation.error);
+  const errorData = getErrorData(mutation.error);
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Financial Vault</CardTitle>
+          <CardDescription>
+            Insira os detalhes para registrar um novo pagamento.
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="amount">Valor (ex: 12.50)</Label>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Descrição</Label>
+              <Input
+                id="description"
+                placeholder="Pagamento da fatura de energia"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-4">
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending ? "Processando..." : "Enviar Pagamento"}
+            </Button>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            {/* Seção de Alertas de Feedback */}
+            {mutation.isSuccess && (
+              <Alert
+                variant="default"
+                className="border-green-500 text-green-700"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                <AlertTitle>Sucesso!</AlertTitle>
+                <AlertDescription>
+                  Pagamento criado com sucesso! ID: {mutation.data.id}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {mutation.isError && errorStatus === 409 && (
+              <Alert variant="destructive">
+                <ShieldAlert className="h-4 w-4" />
+                <AlertTitle>Conflito (409)</AlertTitle>
+                <AlertDescription>
+                  Esta transação já foi processada. ID existente:{" "}
+                  {errorData?.id}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {mutation.isError && errorStatus !== 409 && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>
+                  Erro {errorStatus ? `(${errorStatus})` : ""}
+                </AlertTitle>
+                <AlertDescription>
+                  {mutation.error.message ||
+                    "Não foi possível completar a operação."}
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardFooter>
+        </form>
+      </Card>
+    </main>
   );
 }
