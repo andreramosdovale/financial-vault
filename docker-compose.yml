@@ -34,7 +34,7 @@ services:
       - "3001:3000"
     environment:
       - DATABASE_URL=postgres://user:password@db:5432/financial_vault
-      - SUPER_SECRET_TOKEN=seu-super-secret-token-aqui
+      - SUPER_SECRET_TOKEN=42isTheAnswerToLifeTheUniverseAndEverything
     networks:
       - app-network
 
@@ -50,7 +50,7 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:3001/api
-      - NEXT_PUBLIC_SUPER_SECRET_TOKEN=seu-super-secret-token-aqui
+      - NEXT_PUBLIC_SUPER_SECRET_TOKEN=42isTheAnswerToLifeTheUniverseAndEverything
     networks:
       - app-network
 
